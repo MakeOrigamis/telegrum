@@ -4,7 +4,15 @@
 
 [build.environment]
   NODE_VERSION = "22"
-  NEXT_PUBLIC_SOLANA_RPC = "https://api.mainnet-beta.solana.com"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+# next/image is unoptimized, so the native sharp binaries are dead weight
+# and they dominate the upload size of the server function.
+[functions."___netlify-server-handler"]
+  included_files = [
+    "!node_modules/@img/**",
+    "!node_modules/sharp/**",
+    "!node_modules/next/dist/compiled/@next/font/**",
+  ]

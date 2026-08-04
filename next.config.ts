@@ -1,6 +1,16 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Allow Cloudflare quick tunnels / local network hosts during next dev
+  allowedDevOrigins: [
+    "*.trycloudflare.com",
+    "*.loca.lt",
+    "localhost",
+    "127.0.0.1",
+  ],
+  images: {
+    unoptimized: true,
+  },
   transpilePackages: [
     "@solana/wallet-adapter-base",
     "@solana/wallet-adapter-react",

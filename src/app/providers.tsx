@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
+import { useCallback, useMemo, type ReactNode } from "react";
 import {
   ConnectionProvider,
   WalletProvider,
@@ -19,9 +19,13 @@ export function Providers({ children }: { children: ReactNode }) {
     [],
   );
 
+  const onError = useCallback((error: Error) => {
+    console.error("[wallet]", error.name, error.message);
+  }, []);
+
   return (
     <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect>
+      <WalletProvider wallets={wallets} onError={onError} autoConnect>
         <WalletModalProvider>{children}</WalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>
