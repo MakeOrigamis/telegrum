@@ -10,12 +10,54 @@ function ensureLocal() {
   if (!existsSync(localRoot)) mkdirSync(localRoot, { recursive: true });
 }
 
+let blobError: string | null = null;
+
 async function blobStore() {
   try {
     const { getStore } = await import("@netlify/blobs");
-    return getStore("telegrum");
-  } catch {
+    const siteID = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
+    const token = process.env.NETLIFY_BLOBS_TOKEN || process.env.NETLIFY_API_TOKEN;
+
+    // On Netlify the context is injected automatically; the explicit
+    // credentials are the fallback for when it is not.
+    const store =
+      siteID && token
+        ? getStore({ name: "telegrum", siteID, token, consistency: "strong" })
+        : getStore({ name: "telegrum", consistency: "strong" });
+
+    blobError = null;
+    return store;
+  } catch (error) {
+    blobError = error instanceof Error ? error.message : String(error);
+    // The filesystem fallback is per-container and disappears between
+    // invocations, so on Netlify a silent fallback would look like data loss.
+    if (process.env.NETLIFY) throw new Error(`Blob store unavailable: ${blobError}`);
     return null;
+  }
+}
+
+export async function storageDiagnostics() {
+  const probeKey = `health/${Date.now()}`;
+  try {
+    const store = await blobStore();
+    if (!store) {
+      return { backend: "filesystem", ok: true, netlify: Boolean(process.env.NETLIFY) };
+    }
+    await store.setJSON(probeKey, { ping: true });
+    const read = await store.get(probeKey, { type: "json" });
+    await store.delete(probeKey);
+    return {
+      backend: "netlify-blobs",
+      ok: (read as { ping?: boolean } | null)?.ping === true,
+      netlify: Boolean(process.env.NETLIFY),
+    };
+  } catch (error) {
+    return {
+      backend: "netlify-blobs",
+      ok: false,
+      netlify: Boolean(process.env.NETLIFY),
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
