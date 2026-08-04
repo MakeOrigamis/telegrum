@@ -1,0 +1,10 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NEXT_PUBLIC_SOLANA_RPC = "https://api.mainnet-beta.solana.com"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
